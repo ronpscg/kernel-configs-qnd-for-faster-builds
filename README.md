@@ -43,13 +43,38 @@ And also with the STORAGE_PARAMS.
 I did not check installation yet because I went on the other architectures, but it should work
 ```
 
+#### Adding virtio-console
+Doable with adding CONFIG_PCI  and CONFIG_VIRTIO_CONSOLE (just as with x86)
+```
+CMDLINE="console=ttyAMA0  console=hvc0 stopatramdisk" QEMUOPTIONS=" -chardev stdio,id=virtiocon0,mux=on,signal=off   -device virtio-serial-pci   -device virtconsole,chardev=virtiocon0 -mon chardev=virtiocon0,mode=readline  " CONSOLEPARAMS_0=""  /home/ron/shared_artifacts3/runqemus/pscg_busyboxos-arm64/run-qemu.sh --complete-command-line-override
+```
+
 As well as both virtio and hd storage devices (commented out deliberately there)
 
+**Also doable without PCI**
+```
+CMDLINE="console=ttyAMA0 console=hvc0 stopatramdisk" QEMUOPTIONS=" \
+  -chardev stdio,id=virtiocon0,mux=on,signal=off \
+  -device virtio-serial-device,id=virtioserialbus0 \
+  -device virtconsole,chardev=virtiocon0,name=org.qemu.console.builtin.0,bus=virtioserialbus0.0 \
+  -mon chardev=virtiocon0,mode=readline \
+" CONSOLEPARAMS_0="" /home/ron/shared_artifacts3/runqemus/pscg_busyboxos-arm64/run-qemu.sh --complete-command-line-override
+```
 
 ## Other configs that are known to work well and are 
 - vexpress for arm 
 - defconfig for riscv
 - defconfig for the rest really
+
+
+## arm running of virtio
+GRAPHICSPARAMS_0="" CMDLINE="console=ttyAMA0 console=hvc0 stopatramdisk" QEMUOPTIONS=" \
+  -chardev stdio,id=virtiocon0,mux=on,signal=off \
+  -device virtio-serial-device,id=virtioserialbus0 \
+  -device virtconsole,chardev=virtiocon0,name=org.qemu.console.builtin.0,bus=virtioserialbus0.0 \
+  -mon chardev=virtiocon0,mode=readline \
+" CONSOLEPARAMS_0="" /home/ron/shared_artifacts3/runqemus/pscg_busyboxos-arm/run-qemu.sh --complete-command-line-override
+
 
 ### config=x86_64-virtio--blk-net-console.config
 
@@ -104,3 +129,28 @@ qemu-system-x86_64 -kernel /home/ron/dev/linux-6.15.0-out/x86_64/arch/x86/boot/b
 
 
 I think this should make it clear enough...
+
+
+# Build time and sizes for that:
+```
+Kernel: arch/x86/boot/bzImage is ready  (#1)
+
+real	0m48.812s
+user	11m55.552s
+sys	1m27.454s
+Sun Jun  1 03:58:42 PM IDT 2025
+Sun Jun  1 03:59:30 PM IDT 2025
+```
+
+```
+ron@ronmsi:~/dev/linux-6.15.0-out/x86_64$ du -sh vmlinux arch/x86/boot/bzImage 
+8.2M	vmlinux
+2.1M	arch/x86/boot/bzImage
+```
+
+
+## Definitely missing
+ext4
+
+
+But OK, we'll see about the others later
