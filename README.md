@@ -2,7 +2,7 @@
 
 ## TLDR / self reminder
 The repo is basically meant to *very* quickly test some kernel builds, in an ever increasing and bloating kernel world.
-Started: linux-6.15.0 , arbitrarily (when demonstrating kexec in meetups in 2025).
+Started: *linux-6.15.0* , arbitrarily (when demonstrating kexec in meetups in 2025).
 
 I may put here some narrowed-down configs, as unfortunately the trivial "let's get virtio stuff working for all platforms" is nice in Theory, and somewhat less nice in practice.
 
@@ -25,9 +25,45 @@ Other relevant repos:
 
 ## Some notes about some configs / what's here now
 
+## Networking and build times
+**TLDR: if you don't need networking, remove the lines from the config files or build with `ENABLE_NETWORKING=false`**
+It's trivial. If you use `ENABLE_NETWORKING=false` it disables everything. You can modify the code to be more specific. The default is to have networking on,
+for the minimum functionality of having DHCP working, and working with virtio-net / virtio-net-device (the latter is useful if you do not have `CONFIG_PCI=y`)
+
+We did choose more or less the minimal necessary configs anyhow.
+Also: Use `virtio-net-device` and `virtio-net` if you do not have `CONFIG_PCI` (which you don't in the default arm/arm64 config presented here)
+
+An example for size and time differences in ARM:
+- ~2MB uncompressed/~1MB compressed
+- 1:05 cf. 0:42  (23 seconds)
+
+arm with networking (65 seconds)
+```
+Mon Jun  2 10:22:24 AM IDT 2025
+Mon Jun  2 10:23:29 AM IDT 2025
+
+7.5M    vmlinux
+6.3M    arch/arm/boot/Image
+3.1M    arch/arm/boot/zImage
+
+```
+
+arm without networking (42 seconds)
+```
+Mon Jun  2 10:25:23 AM IDT 2025
+Mon Jun  2 10:26:05 AM IDT 2025
+
+5.4M    vmlinux
+4.6M    arch/arm/boot/Image
+2.2M    arch/arm/boot/zImage
+
+```
+
+
 ### config-arm64-virtio--blk-net.config
 **Supports: arm64 qemu**
-A good fragment to start with, requires more work for arm and riscv64. In arm actually it doesn't require much, but there is a panic that was not trivially resolved.
+**Supports: arm (with very few config additions)
+A good fragment to start with, requires more work for arm and riscv64. In arm actually it doesn't require much, but there is a panic that was not trivially resolved, unless you know a thing or two ( ;-) ) - which is why you can see that the sample script, adds some more configurations to it.
 
 It is a fragment. But it builds well, in about 1.5 minutes frmo a clean state  as per *v6.15.0* with
 ```
@@ -68,12 +104,21 @@ CMDLINE="console=ttyAMA0 console=hvc0 stopatramdisk" QEMUOPTIONS=" \
 
 
 ## arm running of virtio
-GRAPHICSPARAMS_0="" CMDLINE="console=ttyAMA0 console=hvc0 stopatramdisk" QEMUOPTIONS=" \
+GRAPHICSPARAMS_0="" CMDLINE="console=ttyAMA0 console=hvc0 stopatramdisk earlycon=pl011,0x9000000,115200" QEMUOPTIONS=" \
   -chardev stdio,id=virtiocon0,mux=on,signal=off \
   -device virtio-serial-device,id=virtioserialbus0 \
-  -device virtconsole,chardev=virtiocon0,name=org.qemu.console.builtin.0,bus=virtioserialbus0.0 \
-  -mon chardev=virtiocon0,mode=readline \
-" CONSOLEPARAMS_0="" /home/ron/shared_artifacts3/runqemus/pscg_busyboxos-arm/run-qemu.sh --complete-command-line-override
+  -device virtconsole,chardev=virtiocon0,bus=virtioserialbus0.0 \
+  -mon chardev=virtiocon0,mode=readline  " CONSOLEPARAMS_0="" /home/ron/shared_artifacts3/runqemus/pscg_busyboxos-arm/run-qemu.sh --complete-command-line-override
+
+We use the same config file for arm64 - and "manually" add `CONFIG_ARCH_VIRT=y` . This results in a boot, that with that config panics.
+
+Sizes for that:
+```
+$ du -sh vmlinux arch/arm/boot/Image  arch/arm/boot/zImage 
+7.4M	vmlinux
+6.3M	arch/arm/boot/Image
+3.1M	arch/arm/boot/zImage
+```
 
 
 ### config=x86_64-virtio--blk-net-console.config
