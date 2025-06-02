@@ -9,7 +9,7 @@ LOCAL_DIR=$(dirname $(readlink -f $0))
 : ${archs="aarch64 arm riscv64 x86_64 i686"}
 : ${KV=6.15.0}
 : ${KSRC=$HOME/kernel/linux}
-: ${common_config=$LOCAL_DIR/linux-$KV/arm64/config-arm64-virtio--blk-net.config}	# trying to build the same one for all. May work for some architectures, may not
+: ${common_config=$LOCAL_DIR/fragment-configs/linux-$KV/arm64/config-arm64-virtio--blk-net.config}	# trying to build the same one for all. May work for some architectures, may not
 : ${outdir_base=$(readlink -f ../out-linux-6.15.0-kernels)}
 
 declare -A ARCHS		# new-comers: this will bite you. e.g.:  ARCH=arm64 CROSS_COMPILE=aarch64... ARCH=riscv CROSS_COMPILE=riscv64-...
