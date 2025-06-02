@@ -1,13 +1,16 @@
 #!/bin/bash
-# Quickly build a small config for several architectures
-# v6.15 builds on my MSI in ~1.5 minutes - so it will likely take less than a minute on a more decent machine
+# (very!) quickly build a small config for several architectures. Started with an aarch64 config - the same configs (with very minor additions) works for all virtio architectures.
+#
+# v6.15 builds aarch64 on my MSI in ~1.5 minutes. so it will likely take less than a minute on a more decent machine
+# It builds 5 architectures in a bit less than 7 minutes
+#
 
 LOCAL_DIR=$(dirname $(readlink -f $0))
 : ${archs="aarch64 arm riscv64 x86_64 i686"}
 : ${KV=6.15.0}
-: ${KSRC=/tmp/linux-kernel-src}
+: ${KSRC=$HOME/kernel/linux}
 : ${common_config=$LOCAL_DIR/linux-$KV/arm64/config-arm64-virtio--blk-net.config}	# trying to build the same one for all. May work for some architectures, may not
-: ${outdir_base=$(readlink -f ../wip-linux-6.15.0-out)}
+: ${outdir_base=$(readlink -f ../out-linux-6.15.0-kernels)}
 
 declare -A ARCHS		# new-comers: this will bite you. e.g.:  ARCH=arm64 CROSS_COMPILE=aarch64... ARCH=riscv CROSS_COMPILE=riscv64-...
 declare -A CROSS_COMPILES	# cross toolchains
@@ -93,26 +96,37 @@ do_config_overrides() {
 	)
 }
 
-echo $archs
-init_in_loop
 
-type cpufreq_performance &> /dev/null && cpufreq_performance # used specifically on one of my machines to prevent powersave/balanced modes
+main() {
+	type cpufreq_performance &> /dev/null && cpufreq_performance # used specifically on one of my machines to prevent powersave/balanced modes
 
-for a in $archs ; do
-	set -x
-	set -euo pipefail
-	mkdir -p ${OUTDIRS[$a]}
-	cp ${CONFIGS[$a]} ${OUTDIRS[$a]}/.config
-	if [ -n "${MORE_CONFIGS[$a]}" -a ! -f "${OUTDIRS[$a]}/Makefile" ] ; then
-		# in the very first time, must create the build system at the output directory before adding configs. If there are not more configs there is no need to do so
+	start_script=$(date)
+	echo "Building $KV for $archs"
+	init_in_loop
+
+	for a in $archs ; do
+		set -x
+		set -euo pipefail
+		mkdir -p ${OUTDIRS[$a]}
+		cp ${CONFIGS[$a]} ${OUTDIRS[$a]}/.config
+		if [ -n "${MORE_CONFIGS[$a]}" -a ! -f "${OUTDIRS[$a]}/Makefile" ] ; then
+			# in the very first time, must create the build system at the output directory before adding configs. If there are not more configs there is no need to do so
+			ARCH=${ARCHS[$a]} CROSS_COMPILE=${CROSS_COMPILES[$a]} make -C $KSRC O=${OUTDIRS[$a]} olddefconfig
+		fi
+		do_config_overrides ${OUTDIRS[$a]} "${MORE_CONFIGS[$a]}" $a
 		ARCH=${ARCHS[$a]} CROSS_COMPILE=${CROSS_COMPILES[$a]} make -C $KSRC O=${OUTDIRS[$a]} olddefconfig
-	fi
-	do_config_overrides ${OUTDIRS[$a]} "${MORE_CONFIGS[$a]}" $a
-	ARCH=${ARCHS[$a]} CROSS_COMPILE=${CROSS_COMPILES[$a]} make -C $KSRC O=${OUTDIRS[$a]} olddefconfig
-	start=$(date)
-	ARCH=${ARCHS[$a]} CROSS_COMPILE=${CROSS_COMPILES[$a]} time make -C $KSRC O=${OUTDIRS[$a]} -j$(nproc)
-	end=$(date)
-	echo -e "$start\n$end\n$(du -sh ${OUTDIRS[$a]}/vmlinux)" | tee -a /tmp/buildstats
-	set +x
-	set +euo pipefail
-done
+		start=$(date)
+		ARCH=${ARCHS[$a]} CROSS_COMPILE=${CROSS_COMPILES[$a]} time make -C $KSRC O=${OUTDIRS[$a]} -j$(nproc)
+		end=$(date)
+		echo -e "$start\n$end\n$(du -sh ${OUTDIRS[$a]}/vmlinux)" | tee -a /tmp/buildstats
+		set +x
+		set +euo pipefail
+	done
+	end_script=$(date)
+
+
+	echo -e "DONE.\n$start_script\n$end_script\n$" | tee -a /tmp/buildstats
+
+}
+
+main $@

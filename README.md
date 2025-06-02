@@ -120,6 +120,27 @@ $ du -sh vmlinux arch/arm/boot/Image  arch/arm/boot/zImage
 3.1M	arch/arm/boot/zImage
 ```
 
+## riscv running with virtio
+```
+NETWORKPARAMS_0="-netdev user,id=unet -device virtio-net-device,netdev=unet" GRAPHICSPARAMS_0="" CMDLINE="console=ttyS0 console=hvc0
+  -chardev stdio,id=virtiocon0,mux=on,signal=off \
+  -device virtio-serial-device,id=virtioserialbus0 \
+  -device virtconsole,chardev=virtiocon0,bus=virtioserialbus0.0 \
+  -mon chardev=virtiocon0,mode=readline  " CONSOLEPARAMS_0="" /home/ron/shared_artifacts3/runqemus/pscg_busyboxos-riscv/run-qemu.sh --complete-command-line-override
+```
+
+Which turns into:
+```
+qemu-system-riscv64 -smp 2 -m 4g -M virt -kernel /home/ron/dev/wip-linux-6.15.0-out/riscv64/arch/riscv/boot/Image -initrd /home/ron/pscgbuildos-builds/target/product/pscg_busyboxos/build-riscv/image_materials_workdir/installables/bootfat/initramfs.cpio -append "console=ttyS0 console=hvc0 stopatramdisk " -drive id=removabledrive,file=/home/ron/shared_artifacts3/todo-this-is-overridden-3-installer.img,format=raw,if=none -device virtio-blk-device,drive=removabledrive -drive id=emmcdisk,file=/home/ron/shared_artifacts3/pscgbuildos_storage_livecd.img,format=raw,if=none -device virtio-blk-device,drive=emmcdisk -netdev user,id=unet -device virtio-net-device,netdev=unet -chardev stdio,id=virtiocon0,mux=on,signal=off -device virtio-serial-device,id=virtioserialbus0 -device virtconsole,chardev=virtiocon0,bus=virtioserialbus0.0 -mon chardev=virtiocon0,mode=readline 
+```
+
+Sizes for that:
+```
+$ du -sh vmlinux arch/riscv/boot/Image  arch/riscv/boot/Image.gz 
+7.3M	vmlinux
+6.0M	arch/riscv/boot/Image
+3.3M	arch/riscv/boot/Image.gz
+```
 
 ### config=x86_64-virtio--blk-net-console.config
 **Important: x86_64 requires PCI for both HVC and Networking, so the QEMU command line must be different**
