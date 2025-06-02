@@ -3,9 +3,7 @@
 # v6.15 builds on my MSI in ~1.5 minutes - so it will likely take less than a minute on a more decent machine
 
 LOCAL_DIR=$(dirname $(readlink -f $0))
-: ${archs="aarch64 arm riscv64 x86_64"}
-# archs=x86_64
-archs=arm
+: ${archs="aarch64 arm riscv64 x86_64 i686"}
 : ${KV=6.15.0}
 : ${KSRC=/tmp/linux-kernel-src}
 : ${common_config=$LOCAL_DIR/linux-$KV/arm64/config-arm64-virtio--blk-net.config}	# trying to build the same one for all. May work for some architectures, may not
@@ -31,12 +29,15 @@ init_in_loop() {
 
 		if [ ! "$ENABLE_NETWORKING" = "true" ] ; then
 			MORE_CONFIGS[$a]+=" CONFIG_NET=n"
+		else
+			MORE_CONFIGS[$a]+="" # avoid set -u if nothing is set for that
 		fi
 	done
 
 	# Adjustments
 	ARCHS[aarch64]=arm64
 	ARCHS[riscv64]=riscv
+	ARCHS[i686]=i386
 
 	#
 	# arm
@@ -50,6 +51,20 @@ init_in_loop() {
 	# https://linux-arm-kernel.infradead.narkive.com/broMa83B/why-is-floating-point-emulation-necessary
 	MORE_CONFIGS[arm]+=" CONFIG_VFP=y" 
 
+
+	#
+	# x86_64
+	# Note about i686/i386 etc.: We set for i686 simply because it is the architecture in the default tuple of the distro I am using, for a 32bit x86 cross-toolchain
+	# i386 obsolete in modern distros, but if you have an i386-... toolchain name, by all means use it (e.g. add or replace the ...[i686]+="..." statements
+	#
+	MORE_CONFIGS[x86_64]+=" CONFIG_SERIAL_8250=y SERIAL_8250_CONSOLE=y"
+	MORE_CONFIGS[i686]+=" CONFIG_SERIAL_8250=y SERIAL_8250_CONSOLE=y"
+	if [ "$ENABLE_NETWORKING" = "true" ] ; then
+		# As opposed to all other platforms, x86_64 must have CONFIG_PCI for VIRTIO_NET , and the QEMU command line parameters are also different
+		# This will also enable HVC as it is also dependant on CONFIG_PCI in x86_64
+		MORE_CONFIGS[x86_64]+=" CONFIG_PCI=y CONFIG_VIRTIO_PCI=y"
+		MORE_CONFIGS[i686]+=" CONFIG_PCI=y CONFIG_VIRTIO_PCI=y"
+	fi
 }
 
 #
@@ -88,6 +103,10 @@ for a in $archs ; do
 	set -euo pipefail
 	mkdir -p ${OUTDIRS[$a]}
 	cp ${CONFIGS[$a]} ${OUTDIRS[$a]}/.config
+	if [ -n "${MORE_CONFIGS[$a]}" -a ! -f "${OUTDIRS[$a]}/Makefile" ] ; then
+		# in the very first time, must create the build system at the output directory before adding configs. If there are not more configs there is no need to do so
+		ARCH=${ARCHS[$a]} CROSS_COMPILE=${CROSS_COMPILES[$a]} make -C $KSRC O=${OUTDIRS[$a]} olddefconfig
+	fi
 	do_config_overrides ${OUTDIRS[$a]} "${MORE_CONFIGS[$a]}" $a
 	ARCH=${ARCHS[$a]} CROSS_COMPILE=${CROSS_COMPILES[$a]} make -C $KSRC O=${OUTDIRS[$a]} olddefconfig
 	start=$(date)
