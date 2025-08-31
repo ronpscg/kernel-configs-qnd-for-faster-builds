@@ -14,6 +14,7 @@ And so on.
 
 What used to be a less than one minute build on my reference host, became closer to 5 or 10 minutes, and I don't like waiting for things to happen...
 
+All of resulting config files here, can be run within QEMU and rely on having `USE_VIRTIO_FOR_STORAGE_DEVICES=true` in the *PscgBuildOS* `run-qemu.sh` scripts
 
 ### Other related projects to look for more things
 Won't write too much about it. This repo exists because the defconfig for all architectures now are bloated. Sometimes we just want to build something to 
