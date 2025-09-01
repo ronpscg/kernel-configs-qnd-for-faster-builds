@@ -45,6 +45,13 @@ main() {
 			runqemudir+=s390
 			KERNEL_IMAGE+=s390x/arch/s390/boot/bzImage
 			;;
+		sparc64)
+			runqemudir+=sparc64
+			KERNEL_IMAGE+=sparc64/vmlinux
+			# This is a case where 
+			# qemu-system-sparc64 -kernel vmlinux -nographic -append "console=/dev/ttyS0" will work for you, while runnning zImage and image won't.
+			# Can you figure out why?
+			;;
 		*)
 			echo "Please provide a supported architectures in \$1/ You provided: $1"
 	esac

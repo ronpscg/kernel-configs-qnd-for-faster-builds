@@ -44,6 +44,7 @@ init_in_loop() {
 	ARCHS[armhf]=arm
 	ARCHS[loongarch64]=loongarch
 	ARCHS[s390x]=s390
+	ARCHS[sparc64]=sparc64
 
 	#
 	# arm
@@ -84,6 +85,10 @@ init_in_loop() {
 	#
 	CROSS_COMPILES[s390x]=s390x-linux-gnu-
 
+	#
+	# sparc64
+	#
+	CROSS_COMPILES[sparc64]=sparc64-linux-gnu-
 
 
 	#
