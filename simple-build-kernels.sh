@@ -6,11 +6,11 @@
 #
 
 LOCAL_DIR=$(dirname $(readlink -f $0))
-: ${archs="aarch64 arm riscv64 x86_64 i686"}
-: ${KV=6.15.0}
+: ${archs="aarch64 arm armhf riscv64 x86_64 i686 loongarch64 s390x"}
+: ${KV=6.17-rc4}
 : ${KSRC=$HOME/kernel/linux}
-: ${common_config=$LOCAL_DIR/fragment-configs/linux-$KV/arm64/config-arm64-virtio--blk-net.config}	# trying to build the same one for all. May work for some architectures, may not
-: ${outdir_base=$(readlink -f ../out-linux-6.15.0-kernels)}
+: ${common_config=$LOCAL_DIR/fragment-configs/linux-6.15.0/arm64/config-arm64-virtio--blk-net.config}	# trying to build the same one for all. May work for some architectures, may not
+: ${outdir_base=$(readlink -f ../out-linux-$KV-kernels)}
 
 declare -A ARCHS		# new-comers: this will bite you. e.g.:  ARCH=arm64 CROSS_COMPILE=aarch64... ARCH=riscv CROSS_COMPILE=riscv64-...
 declare -A CROSS_COMPILES	# cross toolchains
@@ -41,6 +41,9 @@ init_in_loop() {
 	ARCHS[aarch64]=arm64
 	ARCHS[riscv64]=riscv
 	ARCHS[i686]=i386
+	ARCHS[armhf]=arm
+	ARCHS[loongarch64]=loongarch
+	ARCHS[s390x]=s390
 
 	#
 	# arm
@@ -53,6 +56,32 @@ init_in_loop() {
 	# Since the answer is ready for you, you may read:
 	# https://linux-arm-kernel.infradead.narkive.com/broMa83B/why-is-floating-point-emulation-necessary
 	MORE_CONFIGS[arm]+=" CONFIG_VFP=y" 
+
+
+
+	#
+	# armhf
+	#
+	CROSS_COMPILES[armhf]=arm-linux-gnueabihf-
+	MORE_CONFIGS[armhf]=${MORE_CONFIGS[arm]}
+
+	#
+	# riscv64
+	#
+	# left for the students to solve
+	
+	#
+	# loongarch64
+	#
+	CROSS_COMPILES[loongarch64]=loongarch64-linux-gnu-
+	# Hint: The next line will get your the serial console, and you must run the EFI kernel. But is this enough? [if you are asked, then...]
+	#MORE_CONFIGS[loongarch64]+=" CONFIG_SERIAL_8250=y SERIAL_8250_CONSOLE=y"
+	
+	#
+	# s390x
+	#
+	CROSS_COMPILES[s390x]=s390x-linux-gnu-
+
 
 
 	#
