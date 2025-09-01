@@ -57,10 +57,12 @@ init_in_loop() {
 	# https://linux-arm-kernel.infradead.narkive.com/broMa83B/why-is-floating-point-emulation-necessary
 	MORE_CONFIGS[arm]+=" CONFIG_VFP=y" 
 
-
+	# was left out of 6.17-rc4
+	MORE_CONFIGS[arm]+=" SERIAL_AMBA_PL011=y SERIAL_EARLYCON=y SERIAL_CORE=y SERIAL_CORE_CONSOLE=y"
 
 	#
 	# armhf
+	# Must use CONFIG_VFP=y here as well, qemu-system-armhf (which is the same as qemu-system-arm) behaves the same without it
 	#
 	CROSS_COMPILES[armhf]=arm-linux-gnueabihf-
 	MORE_CONFIGS[armhf]=${MORE_CONFIGS[arm]}
