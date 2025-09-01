@@ -1,5 +1,16 @@
 # kernel-configs-qnd-for-faster-builds
 
+TLDR:
+- `./simple-build-kernels.sh`
+- `./test-base.sh <arch>`
+
+More updates: 
+- [status.md](status.md)
+- Actually, mostly what I say in classes / in recorded videos / in talks
+
+**Note: everything listed in this document, was tested in the kernel version described in this document**. There are changes though, and if a more recent version was added, you may want to rconsult [status.md](status.md).
+
+
 ## TLDR / self reminder
 The repo is basically meant to *very* quickly test some kernel builds, in an ever increasing and bloating kernel world.
 Started: *linux-6.15.0* , arbitrarily (when demonstrating kexec in meetups in 2025).
@@ -226,7 +237,12 @@ ron@ronmsi:~/dev/linux-6.15.0-out/x86_64$ du -sh vmlinux arch/x86/boot/bzImage
 
 
 ## Definitely missing
-ext4
-
-
-But OK, we'll see about the others later
+See [status.md](status.md) and comments in the file.
+In a previous version of this README.md you would have *EXT4* here, but since I moved everyone to test with the PscgBuildOS initramfs/ramdisk and installers as well, I added it, as well as
+other configs that are necessary for them. If you just test *busybox* and pack your ramdisk, or just want to run without `/init`, you can remove them from the base reference fragment file:
+```
+CONFIG_EXT4_FS=y
+CONFIG_VFAT_FS=y
+CONFIG_MSDOS_FS=y
+CONFIG_TMPFS=y
+```
